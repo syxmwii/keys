@@ -81,6 +81,8 @@ final class QuickSettingsView: UIView {
         contentStack.addArrangedSubview(toggleRow(title: "Исправление опечаток", tag: 4))
         contentStack.addArrangedSubview(toggleRow(title: "Язык по контексту", tag: 5))
 
+        contentStack.addArrangedSubview(toggleRow(title: "Простые буквенные клавиши", tag: 6))
+
         footerLabel.font = UIFont.systemFont(ofSize: 11)
         footerLabel.numberOfLines = 0
         footerLabel.text = "Применяется сразу. Полный набор — в приложении Keys."
@@ -183,13 +185,14 @@ final class QuickSettingsView: UIView {
         detailPicker.selectedSegmentIndex = ExpressiveDetail.allCases.firstIndex(of: settings.expressiveDetail) ?? 0
         heightSlider.value = Float(settings.keyHeight)
         heightValueLabel.text = "\(Int(settings.keyHeight)) pt"
-        if switchRows.count == 6 {
+        if switchRows.count == 7 {
             switchRows[0].isOn = settings.haptics
             switchRows[1].isOn = settings.sound
             switchRows[2].isOn = settings.numberRow
             switchRows[3].isOn = settings.suggestions
             switchRows[4].isOn = settings.correctTypos
             switchRows[5].isOn = settings.detectLayout
+            switchRows[6].isOn = settings.plainLetters
         }
         for (index, button) in themeButtons.enumerated() {
             let preset = presets[index]
@@ -272,6 +275,7 @@ final class QuickSettingsView: UIView {
         case 1: store.settings.sound = sender.isOn
         case 3: store.settings.suggestions = sender.isOn
         case 4: store.settings.correctTypos = sender.isOn
+        case 6: store.settings.plainLetters = sender.isOn
         case 5: store.settings.detectLayout = sender.isOn
         case 2: store.settings.numberRow = sender.isOn
         default: break

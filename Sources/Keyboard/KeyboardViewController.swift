@@ -525,7 +525,7 @@ final class KeyboardViewController: UIInputViewController {
 
         for (index, character) in spec.alternates.enumerated() {
             let button = UIButton(type: .system)
-            button.setTitle(character, for: .normal)
+            button.setTitle(shiftActive || capsLock ? character.uppercased() : character, for: .normal)
             button.titleLabel?.font = UIFont.systemFont(ofSize: CGFloat(settings.fontSize) * 1.2)
             button.setTitleColor(settings.colors.uiText, for: .normal)
             button.tag = index

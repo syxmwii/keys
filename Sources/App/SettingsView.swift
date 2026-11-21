@@ -85,6 +85,7 @@ struct SettingsView: View {
                 }
             }
             .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10))
+            Toggle("Простые буквенные клавиши", isOn: $store.settings.plainLetters)
             if settings.design == .expressive {
                 Picker("Фигурные клавиши", selection: $store.settings.expressiveDetail) {
                     ForEach(ExpressiveDetail.allCases, id: \.self) { detail in

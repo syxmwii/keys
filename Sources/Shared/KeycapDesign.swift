@@ -55,7 +55,8 @@ final class KeycapFace: UIView {
     required init?(coder: NSCoder) { return nil }
 
     func configure(_ key: KeySpec, settings: KeysSettings, theme: ThemeColors) {
-        design = settings.design
+        let plainLetter = settings.usesPlainLetters(for: key)
+        design = plainLetter ? .classic : settings.design
         let accent = key.style == .accent
         let modifier = key.style == .modifier
         let base = CGFloat(settings.cornerRadius)
@@ -63,7 +64,7 @@ final class KeycapFace: UIView {
         case .expressive:
             expressiveShape = ExpressiveShape(key: key, detail: settings.expressiveDetail)
             radius = 0
-        case .classic: radius = base
+        case .classic: radius = plainLetter ? min(base, 5) : base
         case .orbit: radius = modifier || accent || key.action == .space ? 100 : base + 6
         case .mechanical: radius = max(2, base * 0.55)
         }
@@ -79,7 +80,8 @@ final class KeycapFace: UIView {
         highlight = fill.keysBlended(with: theme.uiKeyPressed, amount: 0.65)
         backgroundColor = depth > 0 ? fill.keysBlended(with: .black, amount: 0.42) : .clear
         let ink = accent ? fill.keysContrastingText : theme.uiText
-        let size = CGFloat(settings.fontSize) * (accent ? 0.82 : (modifier ? 0.76 : 1))
+        let letterSize = CGFloat(settings.fontSize) + (plainLetter ? 3 : 0)
+        let size = letterSize * (accent ? 0.82 : (modifier ? 0.76 : 1))
         let font = UIFont.systemFont(ofSize: size, weight: design == .classic && !modifier && !accent ? .regular : .medium)
         switch design {
         case .orbit:
@@ -93,7 +95,7 @@ final class KeycapFace: UIView {
         icon.image = symbol.flatMap { UIImage(systemName: $0, withConfiguration: UIImage.SymbolConfiguration(pointSize: size, weight: .medium)) }
         icon.tintColor = ink
         surface.layer.borderColor = theme.uiBorder.cgColor
-        surface.layer.borderWidth = settings.showBorders && design != .expressive ? 1 : 0
+        surface.layer.borderWidth = settings.showBorders && !plainLetter && design != .expressive ? 1 : 0
         silhouette.strokeColor = settings.showBorders ? theme.uiBorder.cgColor : nil
         silhouette.lineWidth = 1
         layer.shadowColor = UIColor.black.cgColor

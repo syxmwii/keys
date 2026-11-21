@@ -76,7 +76,7 @@ final class KeyView: UIControl {
             return
         }
         UIView.animate(withDuration: 0.06, delay: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
-            self.face.transform = self.settings.design.pressedTransform
+            self.face.transform = self.settings.usesPlainLetters(for: self.spec) ? .identity : self.settings.design.pressedTransform
         }
     }
 

@@ -18,10 +18,27 @@ final class LayoutTests: XCTestCase {
         )
 
         XCTAssertEqual(rows.count, 4)
-        XCTAssertEqual(rows[0].count, 12)
+        XCTAssertEqual(rows[0].count, 11)
         XCTAssertEqual(rows[1].count, 11)
         XCTAssertEqual(rows[2].count, 11) // 9 букв + shift + backspace
-        XCTAssertEqual(rows[0].first?.label, "й")
+        XCTAssertEqual(rows[0].map(\.label).joined(), "йцукенгшщзх")
+        XCTAssertTrue(rows.prefix(3).joined().allSatisfy { $0.width == 1 })
+        let letters = rows.flatMap { $0 }.filter(\.isLetter)
+        XCTAssertEqual(letters.first { $0.label == "ь" }?.alternates, ["ъ"])
+        XCTAssertEqual(letters.first { $0.label == "е" }?.alternates, ["ё"])
+        let alphabet = Set(letters.flatMap { [$0.label] + $0.alternates })
+        XCTAssertEqual(alphabet, Set("абвгдеёжзийклмнопрстуфхцчшщъыьэюя".map(String.init)))
+    }
+
+    func testPlainLetterAppearanceForExistingSettings() throws {
+        var settings = try JSONDecoder().decode(KeysSettings.self, from: Data("{}".utf8))
+        let key = KeySpec(label: "Д", action: .character("д"))
+        XCTAssertTrue(settings.usesPlainLetters(for: key))
+        XCTAssertFalse(settings.usesPlainLetters(for: KeySpec(label: "7", action: .character("7"))))
+        XCTAssertFalse(settings.usesPlainLetters(for: KeySpec(label: "пробел", action: .space)))
+        settings.plainLetters = false
+        let data = try JSONEncoder().encode(settings)
+        XCTAssertFalse(try JSONDecoder().decode(KeysSettings.self, from: data).usesPlainLetters(for: key))
     }
 
     func testShiftUppercasesLabels() {

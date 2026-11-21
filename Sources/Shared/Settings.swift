@@ -17,6 +17,7 @@ public struct KeysSettings: Codable, Equatable {
 
     public var showBorders: Bool
     public var showShadow: Bool
+    public var plainLetters: Bool
     public var keyPopup: Bool
 
     public var haptics: Bool
@@ -51,6 +52,7 @@ public struct KeysSettings: Codable, Equatable {
         fontSize = 19
         showBorders = false
         showShadow = true
+        plainLetters = true
         keyPopup = true
         haptics = true
         sound = true
@@ -85,6 +87,7 @@ public struct KeysSettings: Codable, Equatable {
         fontSize = try container.decodeIfPresent(Double.self, forKey: .fontSize) ?? defaults.fontSize
         showBorders = try container.decodeIfPresent(Bool.self, forKey: .showBorders) ?? defaults.showBorders
         showShadow = try container.decodeIfPresent(Bool.self, forKey: .showShadow) ?? defaults.showShadow
+        plainLetters = try container.decodeIfPresent(Bool.self, forKey: .plainLetters) ?? defaults.plainLetters
         keyPopup = try container.decodeIfPresent(Bool.self, forKey: .keyPopup) ?? defaults.keyPopup
         haptics = try container.decodeIfPresent(Bool.self, forKey: .haptics) ?? defaults.haptics
         sound = try container.decodeIfPresent(Bool.self, forKey: .sound) ?? defaults.sound
@@ -110,6 +113,10 @@ public struct KeysSettings: Codable, Equatable {
         if !enabledLayouts.contains(lastLayout) {
             lastLayout = enabledLayouts[0]
         }
+    }
+
+    func usesPlainLetters(for key: KeySpec) -> Bool {
+        plainLetters && key.isLetter
     }
 
     mutating func selectDesign(_ selected: KeycapDesign) {

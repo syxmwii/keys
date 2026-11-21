@@ -59,6 +59,13 @@ struct PreviewKeyboard: View {
                     }
                     .buttonStyle(PreviewCapButton(spec: key, settings: settings))
                     .frame(width: max(available * key.width / total, 1))
+                    .contextMenu {
+                        ForEach(key.alternates, id: \.self) { alternate in
+                            Button(shift || caps ? alternate.uppercased() : alternate) {
+                                perform(.character(alternate))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -121,7 +128,8 @@ private struct PreviewCapButton: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
-        let transform = pressed && settings.bounce && !reduceMotion ? settings.design.pressedTransform : .identity
+        let animateCap = settings.bounce && !reduceMotion && !settings.usesPlainLetters(for: spec)
+        let transform = pressed && animateCap ? settings.design.pressedTransform : .identity
         return PreviewKeycap(spec: spec, settings: settings, pressed: pressed)
             .transformEffect(transform)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.08), value: pressed)

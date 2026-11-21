@@ -162,6 +162,7 @@ final class KeyboardView: UIView {
         let bubble = UIView(frame: frame)
         bubble.isUserInteractionEnabled = false
         let expressivePopup = settings.design == .expressive && settings.expressiveDetail != .minimal
+            && !settings.usesPlainLetters(for: spec)
         bubble.backgroundColor = expressivePopup ? .clear : theme.uiKeyPressed
         if expressivePopup {
             let shape = CAShapeLayer()

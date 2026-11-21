@@ -42,7 +42,7 @@ public enum KeyboardLayoutID: String, Codable, CaseIterable, Identifiable, Hasha
             ]
         case .russian:
             return [
-                ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ"],
+                ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х"],
                 ["ф", "ы", "в", "а", "п", "р", "о", "л", "д", "ж", "э"],
                 ["я", "ч", "с", "м", "и", "т", "ь", "б", "ю"]
             ]
@@ -67,7 +67,7 @@ public enum KeyboardLayoutID: String, Codable, CaseIterable, Identifiable, Hasha
                 "l": ["ł"]
             ]
         case .russian:
-            return [:]
+            return ["е": ["ё"], "ь": ["ъ"]]
         }
     }
 }
@@ -114,6 +114,11 @@ public struct KeySpec: Equatable, Hashable {
     public var alternates: [String]
     /// Стабильный идентификатор для переиспользования вью.
     public var keyID: String
+
+    var isLetter: Bool {
+        guard case .character(let value) = action, value.count == 1 else { return false }
+        return value.first?.isLetter == true
+    }
 
     public init(
         label: String,
@@ -171,7 +176,7 @@ public enum KeyboardRows {
                         KeySpec(
                             label: "",
                             action: .shift,
-                            width: 1.55,
+                            width: layout == .russian ? 1 : 1.55,
                             style: .modifier,
                             symbol: shiftSymbol(shift: shift, caps: caps),
                             keyID: "shift"
@@ -198,7 +203,7 @@ public enum KeyboardRows {
                         KeySpec(
                             label: "",
                             action: .backspace,
-                            width: 1.55,
+                            width: layout == .russian ? 1 : 1.55,
                             style: .modifier,
                             symbol: "delete.left",
                             keyID: "backspace"
