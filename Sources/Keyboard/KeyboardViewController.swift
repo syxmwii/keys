@@ -19,6 +19,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private var currentLayout: KeyboardLayoutID = .english
     private var alternatesOverlay: UIView?
+    private var quickSettings: QuickSettingsView?
     private var pendingAlternates: [String] = []
     private var alternatesTimer: Timer?
 
@@ -62,6 +63,8 @@ final class KeyboardViewController: UIInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         store.reload()
+        quickSettings?.removeFromSuperview()
+        quickSettings = nil
         if !settings.enabledLayouts.contains(currentLayout) {
             currentLayout = settings.enabledLayouts.first ?? .english
         }
@@ -173,6 +176,9 @@ final class KeyboardViewController: UIInputViewController {
         emojiPanel.onClose = { [weak self] in
             self?.emojiVisible = false
             self?.rebuild()
+        }
+        emojiPanel.onSettings = { [weak self] in
+            self?.showQuickSettings()
         }
     }
 
@@ -314,6 +320,48 @@ final class KeyboardViewController: UIInputViewController {
             shiftActive = desired
             rebuild()
         }
+    }
+
+    // MARK: - Быстрые настройки
+
+    /// Панель настроек прямо в клавиатуре: работает и без App Group.
+    private func showQuickSettings() {
+        guard quickSettings == nil else { return }
+        hideAlternates(animated: false)
+
+        let panel = QuickSettingsView(store: store)
+        panel.translatesAutoresizingMaskIntoConstraints = false
+        panel.alpha = 0
+        panel.onChange = { [weak self] in
+            self?.rebuild()
+        }
+        panel.onClose = { [weak self] in
+            self?.hideQuickSettings()
+        }
+
+        view.addSubview(panel)
+        NSLayoutConstraint.activate([
+            panel.topAnchor.constraint(equalTo: view.topAnchor),
+            panel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            panel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            panel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+        quickSettings = panel
+
+        UIView.animate(withDuration: 0.15, delay: 0, options: [.allowUserInteraction]) {
+            panel.alpha = 1
+        }
+    }
+
+    private func hideQuickSettings() {
+        guard let panel = quickSettings else { return }
+        quickSettings = nil
+        UIView.animate(
+            withDuration: 0.12,
+            animations: { panel.alpha = 0 },
+            completion: { _ in panel.removeFromSuperview() }
+        )
+        rebuild()
     }
 
     // MARK: - Альтернативные символы

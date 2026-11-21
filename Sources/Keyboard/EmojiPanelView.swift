@@ -37,6 +37,7 @@ final class EmojiPanelView: UIView {
     var onBackspace: (() -> Void)?
     var onGlobe: (() -> Void)?
     var onClose: (() -> Void)?
+    var onSettings: (() -> Void)?
 
     private let categoryScroll = UIScrollView()
     private let categoryStack = UIStackView()
@@ -182,6 +183,11 @@ final class EmojiPanelView: UIView {
         close.addTarget(self, action: #selector(tapClose), for: .touchUpInside)
         barStack.addArrangedSubview(close)
 
+        let settings = barButton(title: nil, systemImage: "slider.horizontal.3")
+        settings.addTarget(self, action: #selector(tapSettings), for: .touchUpInside)
+        settings.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        barStack.addArrangedSubview(settings)
+
         if showGlobe {
             let globe = barButton(title: nil, systemImage: "globe")
             globe.addTarget(self, action: #selector(tapGlobe), for: .touchUpInside)
@@ -242,6 +248,10 @@ final class EmojiPanelView: UIView {
 
     @objc private func tapGlobe() {
         onGlobe?()
+    }
+
+    @objc private func tapSettings() {
+        onSettings?()
     }
 
     @objc private func deleteDown() {
