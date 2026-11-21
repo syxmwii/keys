@@ -294,7 +294,7 @@ private struct ThemeChip: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(preset.title)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAddTraits(selected ? .isSelected : AccessibilityTraits())
     }
 
     private func key(_ color: Color) -> some View {

@@ -27,7 +27,7 @@ final class KeyView: UIControl {
     private var longPressTimer: Timer?
     private var repeatTimer: Timer?
     private var longPressFired = false
-    private var tracking = false
+    private var touchTracking = false
     private var didSwipe = false
     private var startPoint: CGPoint = .zero
 
@@ -176,7 +176,7 @@ final class KeyView: UIControl {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         guard let touch = touches.first else { return }
-        tracking = true
+        touchTracking = true
         didSwipe = false
         longPressFired = false
         startPoint = touch.location(in: self)
@@ -189,7 +189,7 @@ final class KeyView: UIControl {
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesMoved(touches, with: event)
-        guard tracking, let touch = touches.first else { return }
+        guard touchTracking, let touch = touches.first else { return }
         let point = touch.location(in: self)
         let dx = point.x - startPoint.x
         let dy = point.y - startPoint.y
@@ -198,21 +198,21 @@ final class KeyView: UIControl {
         let threshold: CGFloat = 22
         if abs(dx) > threshold && abs(dx) > abs(dy) {
             didSwipe = true
-            tracking = false
+            touchTracking = false
             cancelTimers()
             setPressed(false)
             animateUp()
             onSwipe?(spec, dx < 0 ? .left : .right)
         } else if abs(dy) > threshold + 8 && abs(dy) > abs(dx) {
             didSwipe = true
-            tracking = false
+            touchTracking = false
             cancelTimers()
             setPressed(false)
             animateUp()
             onSwipe?(spec, dy < 0 ? .up : .down)
         } else if !bounds.insetBy(dx: -24, dy: -24).contains(point) {
             // Палец ушёл далеко от клавиши — отменяем нажатие, как в системной клавиатуре.
-            tracking = false
+            touchTracking = false
             cancelTimers()
             setPressed(false)
             animateUp()
@@ -221,12 +221,12 @@ final class KeyView: UIControl {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
-        guard tracking else {
+        guard touchTracking else {
             setPressed(false)
             animateUp()
             return
         }
-        tracking = false
+        touchTracking = false
         cancelTimers()
         setPressed(false)
         animateUp()
@@ -238,7 +238,7 @@ final class KeyView: UIControl {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesCancelled(touches, with: event)
-        tracking = false
+        touchTracking = false
         cancelTimers()
         setPressed(false)
         animateUp()
@@ -250,7 +250,7 @@ final class KeyView: UIControl {
     private func startLongPressTimer() {
         longPressTimer?.invalidate()
         let timer = Timer(timeInterval: 0.42, repeats: false) { [weak self] _ in
-            guard let self, self.tracking else { return }
+            guard let self, self.touchTracking else { return }
             self.longPressFired = true
             KeyFeedback.longPress(haptics: self.settings.haptics)
             self.onLongPress?(self.spec, self)
@@ -265,7 +265,7 @@ final class KeyView: UIControl {
     private func startRepeat() {
         repeatTimer?.invalidate()
         let timer = Timer(timeInterval: 0.085, repeats: true) { [weak self] _ in
-            guard let self, self.tracking else { return }
+            guard let self, self.touchTracking else { return }
             self.onRepeat?(self.spec)
         }
         RunLoop.main.add(timer, forMode: .common)

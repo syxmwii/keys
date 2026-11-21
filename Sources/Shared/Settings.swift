@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -134,12 +135,9 @@ public final class SettingsStore: ObservableObject {
     /// true, если App Group реально доступна и настройки долетают до клавиатуры.
     public private(set) var sharesWithKeyboard: Bool
 
-    @Published public var settings: KeysSettings {
-        didSet {
-            guard settings != oldValue else { return }
-            persist()
-        }
-    }
+    @Published public var settings: KeysSettings
+
+    private var cancellable: AnyCancellable?
 
     public init(suiteName: String = SettingsStore.appGroupID) {
         group = UserDefaults(suiteName: suiteName)
@@ -156,6 +154,13 @@ public final class SettingsStore: ObservableObject {
         group?.set(true, forKey: Self.probeKey)
         sharesWithKeyboard = group?.bool(forKey: Self.probeKey) == true
         group?.removeObject(forKey: Self.probeKey)
+
+        // Сохраняем на каждое изменение, но не на первичную загрузку.
+        cancellable = $settings
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.persist()
+            }
     }
 
     public func persist() {
