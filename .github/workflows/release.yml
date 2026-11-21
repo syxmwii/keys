@@ -84,6 +84,18 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Разложить IPA
+        run: |
+          mkdir -p dist
+          if [ -f artifacts/Keys.ipa ]; then
+            cp artifacts/Keys.ipa dist/Keys-unsigned.ipa
+          fi
+          if [ -f artifacts/Keys-signed.ipa ]; then
+            cp artifacts/Keys-signed.ipa dist/Keys-signed.ipa
+          fi
+          ls -la dist
+          test -n "$(ls -A dist)"
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -96,6 +108,4 @@ jobs:
             4. В любом поле ввода удерживай 🌐 и выбери Keys.
 
             Настройки темы, высоты клавиш, звука и жестов — в приложении Keys.
-          files: |
-            artifacts/Keys-unsigned.ipa
-            artifacts/Keys-signed.ipa
+          files: dist/*.ipa
