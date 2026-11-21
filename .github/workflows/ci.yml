@@ -17,14 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Кэш Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar
-          key: brew-xcodegen-${{ runner.os }}
-
       - name: XcodeGen
         run: brew install xcodegen
 
