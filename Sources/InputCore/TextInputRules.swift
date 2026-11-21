@@ -26,3 +26,24 @@ enum TextInputRules {
         }
     }
 }
+
+struct ShiftGesture {
+    private var previousTap: Double?
+
+    mutating func reset() {
+        previousTap = nil
+    }
+
+    mutating func tap(at time: Double, shifted: Bool, locked: Bool) -> (shift: Bool, caps: Bool) {
+        if locked {
+            reset()
+            return (false, false)
+        }
+        if let previousTap, (0...0.35).contains(time - previousTap) {
+            reset()
+            return (false, true)
+        }
+        previousTap = time
+        return (!shifted, false)
+    }
+}

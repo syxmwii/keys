@@ -15,6 +15,7 @@ final class QuickSettingsView: UIView {
     private let titleLabel = UILabel()
     private let doneButton = UIButton(type: .system)
     private let heightValueLabel = UILabel()
+    private let designPicker = UISegmentedControl(items: KeycapDesign.allCases.map(\.title))
     private let heightSlider = UISlider()
     private var themeButtons: [UIButton] = []
     private var switchRows: [UISwitch] = []
@@ -64,6 +65,9 @@ final class QuickSettingsView: UIView {
         ])
 
         contentStack.addArrangedSubview(header())
+        designPicker.accessibilityLabel = "Стиль клавиш"
+        designPicker.addTarget(self, action: #selector(changeDesign), for: .valueChanged)
+        contentStack.addArrangedSubview(designPicker)
         contentStack.addArrangedSubview(themeRow())
         contentStack.addArrangedSubview(heightRow())
         contentStack.addArrangedSubview(toggleRow(title: "Вибрация", tag: 0))
@@ -170,6 +174,7 @@ final class QuickSettingsView: UIView {
 
     private func reloadState() {
         let settings = store.settings
+        designPicker.selectedSegmentIndex = KeycapDesign.allCases.firstIndex(of: settings.design) ?? 0
         heightSlider.value = Float(settings.keyHeight)
         heightValueLabel.text = "\(Int(settings.keyHeight)) pt"
         if switchRows.count == 6 {
@@ -219,6 +224,13 @@ final class QuickSettingsView: UIView {
     }
 
     // MARK: - Действия
+
+    @objc private func changeDesign() {
+        let index = designPicker.selectedSegmentIndex
+        guard KeycapDesign.allCases.indices.contains(index) else { return }
+        store.settings.design = KeycapDesign.allCases[index]
+        onChange?()
+    }
 
     @objc private func tapDone() {
         onClose?()

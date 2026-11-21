@@ -119,6 +119,19 @@ final class LayoutTests: XCTestCase {
         XCTAssertEqual(decoded?.keyHeight, KeysSettings().keyHeight)
     }
 
+    func testDesignMigrationAndRoundTrip() throws {
+        XCTAssertEqual(KeysSettings().design, .orbit)
+        let legacy = try JSONDecoder().decode(KeysSettings.self, from: Data(#"{"theme":"nord"}"#.utf8))
+        XCTAssertEqual(legacy.design, .classic)
+        XCTAssertEqual(legacy.theme, .nord)
+        for design in KeycapDesign.allCases {
+            var updated = legacy
+            updated.design = design
+            let data = try JSONEncoder().encode(updated)
+            XCTAssertEqual(try JSONDecoder().decode(KeysSettings.self, from: data), updated)
+        }
+    }
+
     func testCustomThemeColors() {
         var settings = KeysSettings()
         settings.theme = .custom

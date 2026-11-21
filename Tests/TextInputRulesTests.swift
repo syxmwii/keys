@@ -2,6 +2,15 @@ import XCTest
 @testable import Keys
 
 final class TextInputRulesTests: XCTestCase {
+    func testShiftAndCapsLockTiming() {
+        var gesture = ShiftGesture()
+        XCTAssertFalse(gesture.tap(at: 1, shifted: true, locked: false).shift)
+        XCTAssertTrue(gesture.tap(at: 1.25, shifted: false, locked: false).caps)
+        XCTAssertFalse(gesture.tap(at: 2, shifted: false, locked: true).caps)
+        XCTAssertTrue(gesture.tap(at: 3, shifted: false, locked: false).shift)
+        XCTAssertFalse(gesture.tap(at: 4, shifted: true, locked: false).caps)
+    }
+
     func testDoubleSpaceRequiresTextBeforeSpace() {
         XCTAssertTrue(TextInputRules.canReplaceSpace(in: "Привет "))
         XCTAssertFalse(TextInputRules.canReplaceSpace(in: nil))

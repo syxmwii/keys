@@ -108,13 +108,27 @@ final class KeyboardView: UIView {
 
             for (keyIndex, key) in row.enumerated() {
                 let weight = max(specRow[keyIndex].width, 0.1)
-                let keyWidth = max(usableWidth * weight / max(totalWeight, 0.1), 18)
+                let keyWidth = max(usableWidth * weight / max(totalWeight, 0.1), 1)
                 key.frame = CGRect(x: x, y: y, width: keyWidth, height: rowHeight).integral
                 x += keyWidth + gap
             }
 
             y += rowHeight + KeyboardRows.verticalGap
         }
+    }
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let hit = super.hitTest(point, with: event)
+        guard hit === self, let first = keys.first?.first, let last = keys.last?.first,
+              point.y >= first.frame.minY, point.y <= last.frame.maxY else { return hit }
+        let row = keys.min {
+            abs(($0.first?.frame.midY ?? 0) - point.y) < abs(($1.first?.frame.midY ?? 0) - point.y)
+        }
+        return row?.min {
+            let left = max($0.frame.minX - point.x, point.x - $0.frame.maxX)
+            let right = max($1.frame.minX - point.x, point.x - $1.frame.maxX)
+            return left < right
+        } ?? hit
     }
 
     // MARK: - Всплывающая подсказка
@@ -146,6 +160,7 @@ final class KeyboardView: UIView {
         label.minimumScaleFactor = 0.7
 
         let bubble = UIView(frame: frame)
+        bubble.isUserInteractionEnabled = false
         bubble.backgroundColor = theme.uiKeyPressed
         bubble.layer.cornerRadius = CGFloat(settings.cornerRadius) + 2
         bubble.layer.cornerCurve = .continuous
@@ -159,6 +174,10 @@ final class KeyboardView: UIView {
         addSubview(bubble)
         popup = bubble
 
+        if UIAccessibility.isReduceMotionEnabled {
+            bubble.alpha = 1
+            return
+        }
         UIView.animate(withDuration: 0.09, delay: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
             bubble.alpha = 1
         }
@@ -167,7 +186,7 @@ final class KeyboardView: UIView {
     private func hidePopup(animated: Bool = false) {
         guard let popup else { return }
         self.popup = nil
-        guard animated else {
+        guard animated, !UIAccessibility.isReduceMotionEnabled else {
             popup.removeFromSuperview()
             return
         }

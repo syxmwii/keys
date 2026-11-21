@@ -8,6 +8,7 @@ struct PreviewKeyboard: View {
 
     @State private var plane: KeyPlane = .letters
     @State private var shift = false
+    @State private var shiftGesture = ShiftGesture()
     @State private var caps = false
     @State private var layout: KeyboardLayoutID
 
@@ -51,9 +52,13 @@ struct PreviewKeyboard: View {
 
             HStack(spacing: gap) {
                 ForEach(Array(row.enumerated()), id: \.offset) { _, key in
-                    PreviewKeyView(spec: key, colors: colors, settings: settings)
-                        .frame(width: max(available * key.width / total, 14))
-                        .onTapGesture { perform(key.action) }
+                    Button {
+                        perform(key.action)
+                    } label: {
+                        Text(key.label.isEmpty ? key.keyID : key.label)
+                    }
+                    .buttonStyle(PreviewCapButton(spec: key, settings: settings))
+                    .frame(width: max(available * key.width / total, 1))
                 }
             }
         }
@@ -64,6 +69,7 @@ struct PreviewKeyboard: View {
         if settings.haptics {
             KeyFeedback.press(haptics: true, sound: false)
         }
+        if action != .shift { shiftGesture.reset() }
         switch action {
         case .character(let character):
             text += (shift || caps) ? character.uppercased() : character
@@ -75,15 +81,9 @@ struct PreviewKeyboard: View {
         case .newline:
             text += "\n"
         case .shift:
-            if caps {
-                caps = false
-                shift = false
-            } else if shift {
-                shift = false
-                caps = true
-            } else {
-                shift = true
-            }
+            let state = shiftGesture.tap(at: ProcessInfo.processInfo.systemUptime, shifted: shift, locked: caps)
+            shift = state.shift
+            caps = state.caps
         case .plane(let target):
             plane = target
         case .layout:
@@ -101,54 +101,31 @@ struct PreviewKeyboard: View {
     }
 }
 
-private struct PreviewKeyView: View {
+struct PreviewKeycap: UIViewRepresentable {
     let spec: KeySpec
-    let colors: ThemeColors
     let settings: KeysSettings
+    var pressed = false
 
-    private var background: Color {
-        switch spec.style {
-        case .normal: return colors.swiftKey
-        case .modifier: return colors.swiftModifier
-        case .accent: return colors.swiftAccent
-        }
+    func makeUIView(context: Context) -> KeycapFace { KeycapFace() }
+
+    func updateUIView(_ view: KeycapFace, context: Context) {
+        view.configure(spec, settings: settings, theme: settings.colors)
+        view.setPressed(pressed)
     }
+}
 
-    private var foreground: Color {
-        guard spec.style == .accent else { return colors.swiftText }
-        return UIColor(hex: colors.accent)?.keysContrastingText == .black ? .black : .white
-    }
+private struct PreviewCapButton: ButtonStyle {
+    let spec: KeySpec
+    let settings: KeysSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var fontSize: CGFloat {
-        switch spec.style {
-        case .normal: return CGFloat(settings.fontSize)
-        case .modifier: return max(CGFloat(settings.fontSize) * 0.72, 10)
-        case .accent: return max(CGFloat(settings.fontSize) * 0.78, 11)
-        }
-    }
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: CGFloat(settings.cornerRadius), style: .continuous)
-                .fill(background)
-
-            if let symbol = spec.symbol {
-                Image(systemName: symbol)
-                    .font(.system(size: fontSize, weight: .medium))
-                    .foregroundColor(foreground)
-            } else {
-                Text(spec.label)
-                    .font(.system(size: fontSize, weight: spec.style == .normal ? .regular : .medium))
-                    .foregroundColor(foreground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .padding(.horizontal, 2)
-            }
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: CGFloat(settings.cornerRadius), style: .continuous)
-                .strokeBorder(settings.showBorders ? colors.swiftBorder : Color.clear, lineWidth: 1)
-        )
-        .contentShape(Rectangle())
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        let transform = pressed && settings.bounce && !reduceMotion ? settings.design.pressedTransform : .identity
+        return PreviewKeycap(spec: spec, settings: settings, pressed: pressed)
+            .transformEffect(transform)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.08), value: pressed)
+            .contentShape(Rectangle())
+            .accessibilityLabel(spec.label.isEmpty ? spec.keyID : spec.label)
     }
 }

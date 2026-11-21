@@ -18,11 +18,9 @@ final class KeyView: UIControl {
     var onPressEnd: ((KeySpec) -> Void)?
 
     private(set) var spec: KeySpec
-    private var theme: ThemeColors = ThemePreset.midnight.colors
     private var settings = KeysSettings()
 
-    private let titleLabel = UILabel()
-    private let iconView = UIImageView()
+    private let face = KeycapFace()
 
     private var longPressTimer: Timer?
     private var repeatTimer: Timer?
@@ -30,7 +28,6 @@ final class KeyView: UIControl {
     private var touchTracking = false
     private var didSwipe = false
     private var swipeConsumed = false
-    private var verticalConsumed = false
     private var startPoint: CGPoint = .zero
 
     // MARK: - Инициализация
@@ -40,14 +37,7 @@ final class KeyView: UIControl {
         super.init(frame: .zero)
         isAccessibilityElement = true
         accessibilityTraits = .button
-        titleLabel.textAlignment = .center
-        titleLabel.isUserInteractionEnabled = false
-        titleLabel.adjustsFontSizeToFitWidth = true
-        titleLabel.minimumScaleFactor = 0.6
-        iconView.contentMode = .scaleAspectFit
-        iconView.isUserInteractionEnabled = false
-        addSubview(titleLabel)
-        addSubview(iconView)
+        addSubview(face)
     }
 
     @available(*, unavailable)
@@ -66,110 +56,37 @@ final class KeyView: UIControl {
 
     func configure(spec: KeySpec, theme: ThemeColors, settings: KeysSettings) {
         self.spec = spec
-        self.theme = theme
         self.settings = settings
-
-        layer.cornerRadius = CGFloat(settings.cornerRadius)
-        layer.cornerCurve = .continuous
-        layer.masksToBounds = false
-        layer.borderWidth = settings.showBorders ? (1 / UIScreen.main.scale) * 2 : 0
-        layer.borderColor = theme.uiBorder.cgColor
-
-        if settings.showShadow && themeBackgroundFor(style: spec.style).keysLuminance > 0.2 {
-            layer.shadowColor = UIColor.black.cgColor
-            layer.shadowOpacity = 0.22
-            layer.shadowRadius = 0
-            layer.shadowOffset = CGSize(width: 0, height: 1)
-        } else {
-            layer.shadowOpacity = 0
-        }
-
-        titleLabel.font = font(for: spec)
-        titleLabel.text = spec.symbol == nil ? spec.label : nil
-        titleLabel.textColor = textColor()
-        titleLabel.isHidden = spec.symbol != nil
-
-        if let symbol = spec.symbol {
-            let config = UIImage.SymbolConfiguration(pointSize: symbolPointSize(), weight: .medium)
-            iconView.image = UIImage(systemName: symbol, withConfiguration: config)
-            iconView.tintColor = textColor()
-            iconView.isHidden = false
-        } else {
-            iconView.image = nil
-            iconView.isHidden = true
-        }
-
-        accessibilityLabel = spec.symbol != nil ? (spec.keyID) : spec.label
-        backgroundColor = themeBackgroundFor(style: spec.style)
-        setPressed(false)
-        setNeedsLayout()
-    }
-
-    private func themeBackgroundFor(style: KeySpec.Style) -> UIColor {
-        switch style {
-        case .normal: return theme.uiKey
-        case .modifier: return theme.uiModifier
-        case .accent: return theme.uiAccent
-        }
-    }
-
-    private func textColor() -> UIColor {
-        spec.style == .accent ? theme.uiAccent.keysContrastingText : theme.uiText
-    }
-
-    private func font(for spec: KeySpec) -> UIFont {
-        let base = CGFloat(settings.fontSize)
-        switch spec.style {
-        case .normal:
-            return UIFont.systemFont(ofSize: base, weight: .regular)
-        case .modifier:
-            return UIFont.systemFont(ofSize: max(base * 0.72, 11), weight: .medium)
-        case .accent:
-            return UIFont.systemFont(ofSize: max(base * 0.78, 12), weight: .semibold)
-        }
-    }
-
-    private func symbolPointSize() -> CGFloat {
-        switch spec.style {
-        case .normal: return CGFloat(settings.fontSize)
-        case .modifier: return CGFloat(settings.fontSize) * 0.9
-        case .accent: return CGFloat(settings.fontSize) * 0.85
-        }
+        face.configure(spec, settings: settings, theme: theme)
+        accessibilityLabel = spec.symbol != nil ? spec.keyID : spec.label
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let inset: CGFloat = 2
-        titleLabel.frame = bounds.insetBy(dx: inset, dy: inset)
-        let side = min(bounds.height, bounds.width) * 0.52
-        iconView.frame = CGRect(
-            x: (bounds.width - side) / 2,
-            y: (bounds.height - side) / 2,
-            width: side,
-            height: side
-        )
+        face.frame = bounds
     }
 
-    // MARK: - Состояние
-
     private func setPressed(_ pressed: Bool) {
-        backgroundColor = pressed
-            ? themeBackgroundFor(style: spec.style).keysBlended(with: theme.uiKeyPressed, amount: 0.55)
-            : themeBackgroundFor(style: spec.style)
-        alpha = pressed ? 0.95 : 1
+        face.setPressed(pressed)
     }
 
     private func animateDown() {
-        guard settings.bounce else { return }
+        guard settings.bounce, !UIAccessibility.isReduceMotionEnabled else {
+            face.transform = .identity
+            return
+        }
         UIView.animate(withDuration: 0.06, delay: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
-            self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
+            self.face.transform = self.settings.design.pressedTransform
         }
     }
 
     private func animateUp() {
-        guard settings.bounce else { return }
+        guard settings.bounce, !UIAccessibility.isReduceMotionEnabled else {
+            face.transform = .identity
+            return
+        }
         UIView.animate(withDuration: 0.12, delay: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
-            self.transform = .identity
+            self.face.transform = .identity
         }
     }
 
@@ -181,7 +98,6 @@ final class KeyView: UIControl {
         touchTracking = true
         didSwipe = false
         swipeConsumed = false
-        verticalConsumed = false
         longPressFired = false
         startPoint = touch.location(in: self)
         setPressed(true)
@@ -200,7 +116,10 @@ final class KeyView: UIControl {
 
         // Горизонтальный свайп: у пробела повторяется по мере движения пальца,
         // у остальных клавиш срабатывает один раз.
-        if abs(dx) > 18, abs(dx) > abs(dy) {
+        let handlesSwipe = (spec.action == .space && settings.spaceCursor)
+            || (spec.action == .backspace && settings.swipeBackspace && dx < 0)
+            || spec.action == .layout
+        if handlesSwipe, abs(dx) > 18, abs(dx) > abs(dy) {
             cancelTimers()
             didSwipe = true
             if spec.action == .space {
@@ -210,17 +129,6 @@ final class KeyView: UIControl {
                 swipeConsumed = true
                 onSwipe?(spec, dx < 0 ? .left : .right)
                 startPoint = point
-            }
-            return
-        }
-
-        // Вертикальный свайп — один раз на касание.
-        if abs(dy) > 26, abs(dy) > abs(dx) {
-            cancelTimers()
-            didSwipe = true
-            if !verticalConsumed {
-                verticalConsumed = true
-                onSwipe?(spec, dy < 0 ? .up : .down)
             }
             return
         }

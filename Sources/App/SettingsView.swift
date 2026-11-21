@@ -15,6 +15,7 @@ struct SettingsView: View {
                     shareWarning
                 }
                 previewSection
+                designSection
                 themeSection
                 keysSection
                 feedbackSection
@@ -74,6 +75,46 @@ struct SettingsView: View {
         } footer: {
             Text("Клавиши здесь работают: набери что-нибудь, чтобы проверить тему и высоту.")
         }
+    }
+
+    private var designSection: some View {
+        Section("Стиль клавиш") {
+            HStack(spacing: 8) {
+                ForEach(KeycapDesign.allCases, id: \.self) { design in
+                    designCard(design)
+                }
+            }
+            .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10))
+        }
+    }
+
+    private func designCard(_ design: KeycapDesign) -> some View {
+        var sample = settings
+        sample.design = design
+        let selected = settings.design == design
+        return Button {
+            store.settings.design = design
+        } label: {
+            VStack(spacing: 6) {
+                HStack(spacing: 3) {
+                    PreviewKeycap(spec: KeySpec(label: "а", action: .character("а")), settings: sample)
+                    PreviewKeycap(spec: KeySpec(label: "", action: .newline, style: .accent, symbol: "return"), settings: sample)
+                }
+                .frame(height: 36)
+                .padding(5)
+                .background(sample.colors.swiftBackground, in: RoundedRectangle(cornerRadius: 10))
+                Text(design.title)
+                    .font(.caption.weight(selected ? .bold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(3)
+            .frame(maxWidth: .infinity)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Color.accentColor : Color.clear, lineWidth: 2))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(design.title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var themeSection: some View {

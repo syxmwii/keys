@@ -223,6 +223,7 @@ public enum KeyboardRows {
             result.append(contentsOf: numberPlaneRows(settings: settings))
             result.append(
                 planeBottomRow(
+                    layout: layout,
                     planeKey: KeySpec(label: "#+=", action: .plane(.symbols), width: 1.55, style: .modifier, keyID: "plane-symbols"),
                     settings: settings,
                     enabledLayouts: enabledLayouts,
@@ -235,6 +236,7 @@ public enum KeyboardRows {
             result.append(contentsOf: symbolPlaneRows())
             result.append(
                 planeBottomRow(
+                    layout: layout,
                     planeKey: KeySpec(label: "123", action: .plane(.numbers), width: 1.55, style: .modifier, keyID: "plane-numbers"),
                     settings: settings,
                     enabledLayouts: enabledLayouts,
@@ -316,6 +318,7 @@ public enum KeyboardRows {
     }
 
     private static func planeBottomRow(
+        layout: KeyboardLayoutID,
         planeKey: KeySpec,
         settings: KeysSettings,
         enabledLayouts: [KeyboardLayoutID],
@@ -323,16 +326,16 @@ public enum KeyboardRows {
         returnKey: String
     ) -> [KeySpec] {
         var row: [KeySpec] = [
-            KeySpec(label: "АБВ", action: .plane(.letters), width: 1.6, style: .modifier, keyID: "plane-letters"),
+            KeySpec(label: layout == .russian ? "АБВ" : "ABC", action: .plane(.letters), width: 1.6, style: .modifier, keyID: "plane-letters"),
             planeKey
         ]
         if showGlobe {
             row.append(KeySpec(label: "", action: .globe, width: 1.1, style: .modifier, symbol: "globe", keyID: "globe"))
         }
         if enabledLayouts.count > 1 {
-            row.append(KeySpec(label: "EN", action: .layout, width: 1.1, style: .modifier, keyID: "layout"))
+            row.append(KeySpec(label: layout.badge, action: .layout, width: 1.1, style: .modifier, keyID: "layout"))
         }
-        row.append(KeySpec(label: "space", action: .space, width: 3.4, style: .normal, keyID: "space"))
+        row.append(KeySpec(label: layout.spaceTitle, action: .space, width: 3.4, style: .normal, keyID: "space"))
         row.append(KeySpec(label: returnKey, action: .newline, width: 1.9, style: .accent, keyID: "return"))
         return row
     }

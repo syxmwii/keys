@@ -5,6 +5,7 @@ import SwiftUI
 // MARK: - Модель настроек
 
 public struct KeysSettings: Codable, Equatable {
+    public var design: KeycapDesign
     public var theme: ThemePreset
     public var custom: ThemeColors
 
@@ -39,6 +40,7 @@ public struct KeysSettings: Codable, Equatable {
     public var emojiRecents: [String]
 
     public init() {
+        design = .orbit
         theme = .midnight
         custom = ThemePreset.custom.colors
         keyHeight = 50
@@ -71,6 +73,7 @@ public struct KeysSettings: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = KeysSettings()
+        design = try container.decodeIfPresent(KeycapDesign.self, forKey: .design) ?? .classic
         theme = try container.decodeIfPresent(ThemePreset.self, forKey: .theme) ?? defaults.theme
         custom = try container.decodeIfPresent(ThemeColors.self, forKey: .custom) ?? defaults.custom
         keyHeight = try container.decodeIfPresent(Double.self, forKey: .keyHeight) ?? defaults.keyHeight

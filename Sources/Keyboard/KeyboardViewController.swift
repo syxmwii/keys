@@ -27,6 +27,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private var plane: KeyPlane = .letters
     private var shiftActive = false
+    private var shiftGesture = ShiftGesture()
     private var capsLock = false
     private var emojiVisible = false
     private var inputEngine = InputEngine()
@@ -223,6 +224,7 @@ final class KeyboardViewController: UIInputViewController {
         if action != .backspace { lastCorrection = nil }
         if action != .space { inputEngine.reset() }
 
+        if action != .shift { shiftGesture.reset() }
         switch action {
         case .character(let character):
             let text = (shiftActive || capsLock) ? character.uppercased() : character
@@ -230,15 +232,9 @@ final class KeyboardViewController: UIInputViewController {
             updateShiftAfterInput()
 
         case .shift:
-            if capsLock {
-                capsLock = false
-                shiftActive = false
-            } else if shiftActive {
-                shiftActive = false
-                capsLock = true
-            } else {
-                shiftActive = true
-            }
+            let state = shiftGesture.tap(at: ProcessInfo.processInfo.systemUptime, shifted: shiftActive, locked: capsLock)
+            shiftActive = state.shift
+            capsLock = state.caps
             rebuild()
 
         case .backspace:
@@ -365,6 +361,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func beginDocument() {
+        shiftGesture.reset()
         inputEngine.reset()
         lastCorrection = nil
         capsLock = false
