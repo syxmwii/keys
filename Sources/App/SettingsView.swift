@@ -148,6 +148,9 @@ struct SettingsView: View {
 
     private var inputSection: some View {
         Section {
+            Toggle("Подсказки слов", isOn: $store.settings.suggestions)
+            Toggle("Исправление опечаток", isOn: $store.settings.correctTypos)
+            Toggle("Язык по контексту", isOn: $store.settings.detectLayout)
             Toggle("Автозаглавные буквы", isOn: $store.settings.autocapitalize)
             Toggle("Точка по двойному пробелу", isOn: $store.settings.doubleSpacePeriod)
             Toggle("Курсор свайпом по пробелу", isOn: $store.settings.spaceCursor)

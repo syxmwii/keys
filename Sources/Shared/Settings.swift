@@ -21,6 +21,9 @@ public struct KeysSettings: Codable, Equatable {
     public var sound: Bool
     public var bounce: Bool
 
+    public var suggestions: Bool
+    public var correctTypos: Bool
+    public var detectLayout: Bool
     public var autocapitalize: Bool
     public var doubleSpacePeriod: Bool
     public var spaceCursor: Bool
@@ -48,6 +51,9 @@ public struct KeysSettings: Codable, Equatable {
         haptics = true
         sound = true
         bounce = true
+        suggestions = true
+        correctTypos = true
+        detectLayout = true
         autocapitalize = true
         doubleSpacePeriod = true
         spaceCursor = true
@@ -77,6 +83,9 @@ public struct KeysSettings: Codable, Equatable {
         haptics = try container.decodeIfPresent(Bool.self, forKey: .haptics) ?? defaults.haptics
         sound = try container.decodeIfPresent(Bool.self, forKey: .sound) ?? defaults.sound
         bounce = try container.decodeIfPresent(Bool.self, forKey: .bounce) ?? defaults.bounce
+        suggestions = try container.decodeIfPresent(Bool.self, forKey: .suggestions) ?? defaults.suggestions
+        correctTypos = try container.decodeIfPresent(Bool.self, forKey: .correctTypos) ?? defaults.correctTypos
+        detectLayout = try container.decodeIfPresent(Bool.self, forKey: .detectLayout) ?? defaults.detectLayout
         autocapitalize = try container.decodeIfPresent(Bool.self, forKey: .autocapitalize) ?? defaults.autocapitalize
         doubleSpacePeriod = try container.decodeIfPresent(Bool.self, forKey: .doubleSpacePeriod) ?? defaults.doubleSpacePeriod
         spaceCursor = try container.decodeIfPresent(Bool.self, forKey: .spaceCursor) ?? defaults.spaceCursor

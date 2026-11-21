@@ -3,13 +3,13 @@ name: Keys
 options:
   bundleIdPrefix: app.syxmwii
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
 settings:
   base:
-    SWIFT_VERSION: "5.9"
+    SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
@@ -24,6 +24,7 @@ targets:
     sources:
       - path: Sources/App
       - path: Sources/Shared
+      - path: Sources/InputCore
       - path: Resources
     settings:
       base:
@@ -45,6 +46,7 @@ targets:
     sources:
       - path: Sources/Keyboard
       - path: Sources/Shared
+      - path: Sources/InputCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.syxmwii.keys.keyboard

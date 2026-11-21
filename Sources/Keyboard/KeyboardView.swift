@@ -28,10 +28,21 @@ final class KeyboardView: UIView {
     // MARK: - Обновление
 
     func update(rows: [[KeySpec]], theme: ThemeColors, settings: KeysSettings) {
+        let sameLayout = specs.map { $0.map(\.keyID) } == rows.map { $0.map(\.keyID) }
+        let appearanceChanged = self.theme != theme || self.settings != settings
         self.specs = rows
         self.theme = theme
         self.settings = settings
-        rebuild()
+
+        if sameLayout {
+            for (row, views) in zip(rows, keys) {
+                for (spec, key) in zip(row, views) where appearanceChanged || spec != key.spec {
+                    key.configure(spec: spec, theme: theme, settings: settings)
+                }
+            }
+        } else {
+            rebuild()
+        }
         setNeedsLayout()
     }
 

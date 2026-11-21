@@ -69,6 +69,9 @@ final class QuickSettingsView: UIView {
         contentStack.addArrangedSubview(toggleRow(title: "Вибрация", tag: 0))
         contentStack.addArrangedSubview(toggleRow(title: "Звук", tag: 1))
         contentStack.addArrangedSubview(toggleRow(title: "Ряд цифр", tag: 2))
+        contentStack.addArrangedSubview(toggleRow(title: "Подсказки слов", tag: 3))
+        contentStack.addArrangedSubview(toggleRow(title: "Исправление опечаток", tag: 4))
+        contentStack.addArrangedSubview(toggleRow(title: "Язык по контексту", tag: 5))
 
         footerLabel.font = UIFont.systemFont(ofSize: 11)
         footerLabel.numberOfLines = 0
@@ -169,10 +172,13 @@ final class QuickSettingsView: UIView {
         let settings = store.settings
         heightSlider.value = Float(settings.keyHeight)
         heightValueLabel.text = "\(Int(settings.keyHeight)) pt"
-        if switchRows.count == 3 {
+        if switchRows.count == 6 {
             switchRows[0].isOn = settings.haptics
             switchRows[1].isOn = settings.sound
             switchRows[2].isOn = settings.numberRow
+            switchRows[3].isOn = settings.suggestions
+            switchRows[4].isOn = settings.correctTypos
+            switchRows[5].isOn = settings.detectLayout
         }
         for (index, button) in themeButtons.enumerated() {
             let preset = presets[index]
@@ -237,6 +243,9 @@ final class QuickSettingsView: UIView {
         switch sender.tag {
         case 0: store.settings.haptics = sender.isOn
         case 1: store.settings.sound = sender.isOn
+        case 3: store.settings.suggestions = sender.isOn
+        case 4: store.settings.correctTypos = sender.isOn
+        case 5: store.settings.detectLayout = sender.isOn
         case 2: store.settings.numberRow = sender.isOn
         default: break
         }

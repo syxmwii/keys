@@ -201,7 +201,7 @@ final class KeyView: UIControl {
         // Горизонтальный свайп: у пробела повторяется по мере движения пальца,
         // у остальных клавиш срабатывает один раз.
         if abs(dx) > 18, abs(dx) > abs(dy) {
-            longPressTimer?.invalidate()
+            cancelTimers()
             didSwipe = true
             if spec.action == .space {
                 onSwipe?(spec, dx < 0 ? .left : .right)
@@ -216,7 +216,7 @@ final class KeyView: UIControl {
 
         // Вертикальный свайп — один раз на касание.
         if abs(dy) > 26, abs(dy) > abs(dx) {
-            longPressTimer?.invalidate()
+            cancelTimers()
             didSwipe = true
             if !verticalConsumed {
                 verticalConsumed = true
@@ -231,6 +231,7 @@ final class KeyView: UIControl {
             cancelTimers()
             setPressed(false)
             animateUp()
+            onPressEnd?(spec)
         }
     }
 
@@ -264,13 +265,16 @@ final class KeyView: UIControl {
 
     private func startLongPressTimer() {
         longPressTimer?.invalidate()
+        let repeatsDeletion = settings.deleteRepeat && spec.action == .backspace
+        guard repeatsDeletion || !spec.alternates.isEmpty else { return }
         let timer = Timer(timeInterval: 0.42, repeats: false) { [weak self] _ in
             guard let self, self.touchTracking else { return }
             self.longPressFired = true
             KeyFeedback.longPress(haptics: self.settings.haptics)
             self.onLongPress?(self.spec, self)
-            if self.settings.deleteRepeat, self.spec.action == .backspace {
+            if repeatsDeletion {
                 self.startRepeat()
+                self.onRepeat?(self.spec)
             }
         }
         RunLoop.main.add(timer, forMode: .common)
