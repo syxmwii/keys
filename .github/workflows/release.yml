@@ -1,0 +1,101 @@
+name: release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  # 1. Неподписанный IPA — то, что можно подписать чем угодно.
+  build:
+    name: Сборка
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen
+        run: brew install xcodegen
+
+      - name: Неподписанный IPA
+        run: ./scripts/build-ipa.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Keys-unsigned
+          path: build/Keys.ipa
+          retention-days: 7
+
+  # 2. Подпись своими сертификатами (опционально).
+  #    Секреты: KEYS_P12_B64, KEYS_P12_PASSWORD, KEYS_PROFILE_B64, KEYS_EXT_PROFILE_B64.
+  sign:
+    name: Подпись
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Keys-unsigned
+          path: build
+
+      - name: Проверить секреты
+        id: check
+        env:
+          P12: ${{ secrets.KEYS_P12_B64 }}
+          PROFILE: ${{ secrets.KEYS_PROFILE_B64 }}
+        run: |
+          if [ -n "$P12" ] && [ -n "$PROFILE" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Подпись пропущена — добавь KEYS_P12_B64, KEYS_P12_PASSWORD, KEYS_PROFILE_B64 (и KEYS_EXT_PROFILE_B64)."
+          fi
+
+      - name: Подписать IPA
+        if: steps.check.outputs.ready == 'true'
+        env:
+          P12_B64: ${{ secrets.KEYS_P12_B64 }}
+          P12_PASSWORD: ${{ secrets.KEYS_P12_PASSWORD }}
+          PROFILE_B64: ${{ secrets.KEYS_PROFILE_B64 }}
+          EXT_PROFILE_B64: ${{ secrets.KEYS_EXT_PROFILE_B64 }}
+          OUT: Keys-signed.ipa
+        run: ./scripts/sign-ipa.sh build/Keys.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.ready == 'true'
+        with:
+          name: Keys-signed
+          path: Keys-signed.ipa
+          retention-days: 7
+
+  # 3. Релиз: неподписанный + подписанный (если есть).
+  publish:
+    name: Публикация
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Установка
+
+            1. Скачай `Keys-signed.ipa` (если есть) или `Keys-unsigned.ipa`.
+            2. Неподписанный IPA подписывается на компьютере: Sideloadly / AltStore / Feather.
+            3. После установки: **Настройки → Основные → Клавиатура → Клавиатуры → Новые клавиатуры → Keys**.
+            4. В любом поле ввода удерживай 🌐 и выбери Keys.
+
+            Настройки темы, высоты клавиш, звука и жестов — в приложении Keys.
+          files: |
+            artifacts/Keys-unsigned.ipa
+            artifacts/Keys-signed.ipa

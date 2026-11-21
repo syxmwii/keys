@@ -1,0 +1,9 @@
+build/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+!*.xcodeproj/project.pbxproj
+.DS_Store
+*.ipa
+*.xcarchive
+.env

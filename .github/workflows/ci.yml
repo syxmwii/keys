@@ -1,0 +1,87 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Сборка IPA
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Кэш Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar
+          key: brew-xcodegen-${{ runner.os }}
+
+      - name: XcodeGen
+        run: brew install xcodegen
+
+      - name: Неподписанный IPA
+        run: ./scripts/build-ipa.sh
+
+      - name: Артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: Keys-unsigned
+          path: build/Keys.ipa
+          retention-days: 14
+
+      - name: Итог
+        run: |
+          {
+            echo "### Keys готов"
+            echo ""
+            echo "Размер: $(du -h build/Keys.ipa | cut -f1)"
+            echo ""
+            echo "Артефакт **Keys-unsigned** → скачай, подпиши Sideloadly и ставь на iPhone."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: Тесты
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen
+        run: brew install xcodegen
+
+      - name: Сгенерировать проект
+        run: xcodegen generate --spec project.yml
+
+      - name: Выбрать симулятор
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          names = [d["name"] for runtime, devices in data.items() if "iOS" in runtime for d in devices]
+          iphones = [n for n in names if n.startswith("iPhone")]
+          print(sorted(iphones)[-1] if iphones else "")
+          ')
+          if [ -z "$DEVICE" ]; then
+            echo "нет доступных iPhone-симуляторов" >&2
+            exit 1
+          fi
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+          echo "Симулятор: $DEVICE"
+
+      - name: xcodebuild test
+        run: |
+          xcodebuild test \
+            -project Keys.xcodeproj \
+            -scheme Keys \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO

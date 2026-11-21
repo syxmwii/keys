@@ -1,0 +1,82 @@
+name: Keys
+
+options:
+  bundleIdPrefix: app.syxmwii
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+  configs:
+    Debug:
+      ENABLE_TESTABILITY: YES
+
+targets:
+  Keys:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+      - path: Sources/Shared
+      - path: Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.syxmwii.keys
+        PRODUCT_NAME: Keys
+        INFOPLIST_FILE: Sources/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Entitlements/Keys.entitlements
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - target: KeysKeyboard
+        embed: true
+
+  KeysKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Keyboard
+      - path: Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.syxmwii.keys.keyboard
+        PRODUCT_NAME: KeysKeyboard
+        INFOPLIST_FILE: Sources/Keyboard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Entitlements/KeysKeyboard.entitlements
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  KeysTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Keys
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.syxmwii.keys.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Keys:
+    build:
+      targets:
+        Keys: all
+        KeysKeyboard: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - KeysTests
