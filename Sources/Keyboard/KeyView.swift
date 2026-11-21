@@ -29,6 +29,8 @@ final class KeyView: UIControl {
     private var longPressFired = false
     private var touchTracking = false
     private var didSwipe = false
+    private var swipeConsumed = false
+    private var verticalConsumed = false
     private var startPoint: CGPoint = .zero
 
     // MARK: - Инициализация
@@ -178,6 +180,8 @@ final class KeyView: UIControl {
         guard let touch = touches.first else { return }
         touchTracking = true
         didSwipe = false
+        swipeConsumed = false
+        verticalConsumed = false
         longPressFired = false
         startPoint = touch.location(in: self)
         setPressed(true)
@@ -194,23 +198,34 @@ final class KeyView: UIControl {
         let dx = point.x - startPoint.x
         let dy = point.y - startPoint.y
 
-        guard !didSwipe else { return }
-        let threshold: CGFloat = 22
-        if abs(dx) > threshold && abs(dx) > abs(dy) {
+        // Горизонтальный свайп: у пробела повторяется по мере движения пальца,
+        // у остальных клавиш срабатывает один раз.
+        if abs(dx) > 18, abs(dx) > abs(dy) {
+            longPressTimer?.invalidate()
             didSwipe = true
-            touchTracking = false
-            cancelTimers()
-            setPressed(false)
-            animateUp()
-            onSwipe?(spec, dx < 0 ? .left : .right)
-        } else if abs(dy) > threshold + 8 && abs(dy) > abs(dx) {
+            if spec.action == .space {
+                onSwipe?(spec, dx < 0 ? .left : .right)
+                startPoint = point
+            } else if !swipeConsumed {
+                swipeConsumed = true
+                onSwipe?(spec, dx < 0 ? .left : .right)
+                startPoint = point
+            }
+            return
+        }
+
+        // Вертикальный свайп — один раз на касание.
+        if abs(dy) > 26, abs(dy) > abs(dx) {
+            longPressTimer?.invalidate()
             didSwipe = true
-            touchTracking = false
-            cancelTimers()
-            setPressed(false)
-            animateUp()
-            onSwipe?(spec, dy < 0 ? .up : .down)
-        } else if !bounds.insetBy(dx: -24, dy: -24).contains(point) {
+            if !verticalConsumed {
+                verticalConsumed = true
+                onSwipe?(spec, dy < 0 ? .up : .down)
+            }
+            return
+        }
+
+        if !didSwipe, !bounds.insetBy(dx: -24, dy: -24).contains(point) {
             // Палец ушёл далеко от клавиши — отменяем нажатие, как в системной клавиатуре.
             touchTracking = false
             cancelTimers()
