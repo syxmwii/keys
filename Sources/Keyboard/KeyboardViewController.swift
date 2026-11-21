@@ -153,6 +153,7 @@ final class KeyboardViewController: UIInputViewController {
             returnKey: "return"
         )
 
+        suggestionBar.configure(settings: current)
         refreshSuggestions()
         keyboardView.isHidden = emojiVisible
         emojiPanel.isHidden = !emojiVisible

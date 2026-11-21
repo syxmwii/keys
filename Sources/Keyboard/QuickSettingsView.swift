@@ -15,6 +15,7 @@ final class QuickSettingsView: UIView {
     private let titleLabel = UILabel()
     private let doneButton = UIButton(type: .system)
     private let heightValueLabel = UILabel()
+    private let detailPicker = UISegmentedControl(items: ExpressiveDetail.allCases.map(\.title))
     private let designPicker = UISegmentedControl(items: KeycapDesign.allCases.map(\.title))
     private let heightSlider = UISlider()
     private var themeButtons: [UIButton] = []
@@ -68,6 +69,9 @@ final class QuickSettingsView: UIView {
         designPicker.accessibilityLabel = "Стиль клавиш"
         designPicker.addTarget(self, action: #selector(changeDesign), for: .valueChanged)
         contentStack.addArrangedSubview(designPicker)
+        detailPicker.accessibilityLabel = "Фигурные клавиши"
+        detailPicker.addTarget(self, action: #selector(changeDetail), for: .valueChanged)
+        contentStack.addArrangedSubview(detailPicker)
         contentStack.addArrangedSubview(themeRow())
         contentStack.addArrangedSubview(heightRow())
         contentStack.addArrangedSubview(toggleRow(title: "Вибрация", tag: 0))
@@ -175,6 +179,8 @@ final class QuickSettingsView: UIView {
     private func reloadState() {
         let settings = store.settings
         designPicker.selectedSegmentIndex = KeycapDesign.allCases.firstIndex(of: settings.design) ?? 0
+        detailPicker.isHidden = settings.design != .expressive
+        detailPicker.selectedSegmentIndex = ExpressiveDetail.allCases.firstIndex(of: settings.expressiveDetail) ?? 0
         heightSlider.value = Float(settings.keyHeight)
         heightValueLabel.text = "\(Int(settings.keyHeight)) pt"
         if switchRows.count == 6 {
@@ -228,7 +234,16 @@ final class QuickSettingsView: UIView {
     @objc private func changeDesign() {
         let index = designPicker.selectedSegmentIndex
         guard KeycapDesign.allCases.indices.contains(index) else { return }
-        store.settings.design = KeycapDesign.allCases[index]
+        store.settings.selectDesign(KeycapDesign.allCases[index])
+        reloadState()
+        applyTheme()
+        onChange?()
+    }
+
+    @objc private func changeDetail() {
+        let index = detailPicker.selectedSegmentIndex
+        guard ExpressiveDetail.allCases.indices.contains(index) else { return }
+        store.settings.expressiveDetail = ExpressiveDetail.allCases[index]
         onChange?()
     }
 

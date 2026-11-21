@@ -20,12 +20,30 @@ final class SuggestionBar: UIStackView {
         fatalError("init(coder:) unavailable")
     }
 
+    func configure(settings: KeysSettings) {
+        let expressive = settings.design == .expressive
+        spacing = expressive ? 2 : 0
+        isLayoutMarginsRelativeArrangement = expressive
+        layoutMargins = expressive ? UIEdgeInsets(top: 3, left: 6, bottom: 2, right: 6) : .zero
+        for (index, button) in arrangedSubviews.enumerated() {
+            button.backgroundColor = expressive ? settings.colors.uiModifier : .clear
+            button.layer.cornerRadius = expressive ? 16 : 0
+            button.layer.cornerCurve = .continuous
+            switch index {
+            case 0: button.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+            case arrangedSubviews.count - 1: button.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+            default: button.layer.maskedCorners = []
+            }
+        }
+    }
+
     func display(_ words: [String], color: UIColor) {
         for (index, view) in arrangedSubviews.enumerated() {
             guard let button = view as? UIButton else { continue }
             let word = words.indices.contains(index) ? words[index] : nil
             button.setTitle(word, for: .normal)
             button.setTitleColor(color, for: .normal)
+            button.alpha = word == nil ? 0 : 1
             button.isEnabled = word != nil
             button.isAccessibilityElement = word != nil
         }

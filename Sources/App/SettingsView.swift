@@ -79,25 +79,35 @@ struct SettingsView: View {
 
     private var designSection: some View {
         Section("Стиль клавиш") {
-            HStack(spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(KeycapDesign.allCases, id: \.self) { design in
                     designCard(design)
                 }
             }
             .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10))
+            if settings.design == .expressive {
+                Picker("Фигурные клавиши", selection: $store.settings.expressiveDetail) {
+                    ForEach(ExpressiveDetail.allCases, id: \.self) { detail in
+                        Text(detail.title).tag(detail)
+                    }
+                }
+            }
         }
     }
 
     private func designCard(_ design: KeycapDesign) -> some View {
         var sample = settings
-        sample.design = design
+        sample.selectDesign(design)
         let selected = settings.design == design
         return Button {
-            store.settings.design = design
+            store.settings.selectDesign(design)
         } label: {
             VStack(spacing: 6) {
                 HStack(spacing: 3) {
                     PreviewKeycap(spec: KeySpec(label: "а", action: .character("а")), settings: sample)
+                    if design == .expressive {
+                        PreviewKeycap(spec: KeySpec(label: "", action: .emoji, style: .modifier, symbol: "face.smiling"), settings: sample)
+                    }
                     PreviewKeycap(spec: KeySpec(label: "", action: .newline, style: .accent, symbol: "return"), settings: sample)
                 }
                 .frame(height: 36)

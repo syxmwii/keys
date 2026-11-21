@@ -64,6 +64,7 @@ public enum ThemePreset: String, Codable, CaseIterable, Identifiable, Hashable {
     case sunset
     case iris
     case pistachio
+    case material
     case custom
 
     public var id: String { rawValue }
@@ -80,13 +81,14 @@ public enum ThemePreset: String, Codable, CaseIterable, Identifiable, Hashable {
         case .sunset: return "Sunset"
         case .iris: return "Ирис"
         case .pistachio: return "Фисташка"
+        case .material: return "Material"
         case .custom: return "Custom"
         }
     }
 
     /// Светлая тема — приложению нужно знать, какой цвет текста ставить в UI.
     public var isLight: Bool {
-        self == .latte || self == .sakura || self == .pistachio
+        self == .latte || self == .sakura || self == .pistachio || self == .material
     }
 
     public var colors: ThemeColors {
@@ -180,6 +182,11 @@ public enum ThemePreset: String, Codable, CaseIterable, Identifiable, Hashable {
             return ThemeColors(
                 background: "#E3E8D4", key: "#F7FAEC", keyPressed: "#CBD9AF",
                 modifier: "#CED8BA", text: "#232C20", accent: "#365C43", border: "#9BAE8D"
+            )
+        case .material:
+            return ThemeColors(
+                background: "#E8DEF8", key: "#FFFBFE", keyPressed: "#D0BCFF",
+                modifier: "#D6C6EC", text: "#211C28", accent: "#6750A4", border: "#81758E"
             )
         case .custom:
             return ThemeColors(

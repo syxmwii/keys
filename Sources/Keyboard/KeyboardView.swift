@@ -149,7 +149,7 @@ final class KeyboardView: UIView {
             height: height
         )
         frame.origin.x = min(max(frame.origin.x, 2), bounds.width - width - 2)
-        frame.origin.y = max(frame.origin.y, 0)
+        frame.origin.y = max(frame.origin.y, -self.frame.minY)
 
         let label = UILabel(frame: .zero)
         label.text = spec.label
@@ -161,11 +161,19 @@ final class KeyboardView: UIView {
 
         let bubble = UIView(frame: frame)
         bubble.isUserInteractionEnabled = false
-        bubble.backgroundColor = theme.uiKeyPressed
+        let expressivePopup = settings.design == .expressive && settings.expressiveDetail != .minimal
+        bubble.backgroundColor = expressivePopup ? .clear : theme.uiKeyPressed
+        if expressivePopup {
+            let shape = CAShapeLayer()
+            shape.path = ExpressiveShape.cookie.path(in: bubble.bounds)
+            shape.fillColor = theme.uiAccent.cgColor
+            bubble.layer.addSublayer(shape)
+            label.textColor = theme.uiAccent.keysContrastingText
+        }
         bubble.layer.cornerRadius = CGFloat(settings.cornerRadius) + 2
         bubble.layer.cornerCurve = .continuous
         bubble.layer.shadowColor = UIColor.black.cgColor
-        bubble.layer.shadowOpacity = 0.25
+        bubble.layer.shadowOpacity = expressivePopup ? 0 : 0.25
         bubble.layer.shadowRadius = 6
         bubble.layer.shadowOffset = CGSize(width: 0, height: 2)
         label.frame = bubble.bounds.insetBy(dx: 4, dy: 2)

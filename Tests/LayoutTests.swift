@@ -132,6 +132,21 @@ final class LayoutTests: XCTestCase {
         }
     }
 
+    func testExpressivePresetAndShapeDensity() throws {
+        var settings = KeysSettings()
+        settings.selectDesign(.expressive)
+        XCTAssertEqual(settings.theme, .material)
+        let globe = KeySpec(label: "", action: .globe)
+        XCTAssertEqual(ExpressiveShape(key: globe, detail: settings.expressiveDetail), .clover)
+        settings.expressiveDetail = .minimal
+        XCTAssertEqual(ExpressiveShape(key: globe, detail: settings.expressiveDetail), .tile)
+        settings.theme = .nord
+        settings.selectDesign(.expressive)
+        XCTAssertEqual(settings.theme, .nord)
+        let saved = try JSONEncoder().encode(settings)
+        XCTAssertEqual(try JSONDecoder().decode(KeysSettings.self, from: saved), settings)
+    }
+
     func testCustomThemeColors() {
         var settings = KeysSettings()
         settings.theme = .custom

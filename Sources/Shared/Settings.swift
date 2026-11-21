@@ -5,6 +5,7 @@ import SwiftUI
 // MARK: - Модель настроек
 
 public struct KeysSettings: Codable, Equatable {
+    public var expressiveDetail: ExpressiveDetail
     public var design: KeycapDesign
     public var theme: ThemePreset
     public var custom: ThemeColors
@@ -40,6 +41,7 @@ public struct KeysSettings: Codable, Equatable {
     public var emojiRecents: [String]
 
     public init() {
+        expressiveDetail = .accents
         design = .orbit
         theme = .midnight
         custom = ThemePreset.custom.colors
@@ -73,6 +75,7 @@ public struct KeysSettings: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = KeysSettings()
+        expressiveDetail = try container.decodeIfPresent(ExpressiveDetail.self, forKey: .expressiveDetail) ?? .accents
         design = try container.decodeIfPresent(KeycapDesign.self, forKey: .design) ?? .classic
         theme = try container.decodeIfPresent(ThemePreset.self, forKey: .theme) ?? defaults.theme
         custom = try container.decodeIfPresent(ThemeColors.self, forKey: .custom) ?? defaults.custom
@@ -107,6 +110,12 @@ public struct KeysSettings: Codable, Equatable {
         if !enabledLayouts.contains(lastLayout) {
             lastLayout = enabledLayouts[0]
         }
+    }
+
+    mutating func selectDesign(_ selected: KeycapDesign) {
+        guard selected != design else { return }
+        design = selected
+        if selected == .expressive { theme = .material }
     }
 
     public var colors: ThemeColors {
