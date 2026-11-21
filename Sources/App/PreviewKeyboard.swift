@@ -29,7 +29,7 @@ struct PreviewKeyboard: View {
             settings: settings,
             enabledLayouts: settings.enabledLayouts,
             showGlobe: false,
-            returnKey: "return"
+            returnKey: layout == .russian ? "ввод" : "return"
         )
 
         VStack(spacing: CGFloat(KeyboardRows.verticalGap)) {
@@ -47,7 +47,8 @@ struct PreviewKeyboard: View {
     private func rowView(_ row: [KeySpec]) -> some View {
         GeometryReader { geometry in
             let gap = CGFloat(settings.keyGap)
-            let available = geometry.size.width - CGFloat(max(row.count - 1, 0)) * gap
+            let gutter = settings.position.gutter(for: geometry.size.width + 2 * KeyboardRows.sidePadding)
+            let available = geometry.size.width - gutter - CGFloat(max(row.count - 1, 0)) * gap
             let total = max(row.reduce(CGFloat(0)) { $0 + $1.width }, 0.1)
 
             HStack(spacing: gap) {
@@ -68,6 +69,7 @@ struct PreviewKeyboard: View {
                     }
                 }
             }
+            .offset(x: settings.position == .right ? gutter : 0)
         }
         .frame(height: CGFloat(settings.keyHeight))
     }

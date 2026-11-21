@@ -13,6 +13,8 @@ jobs:
   build:
     name: Сборка
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +36,8 @@ jobs:
     name: Подпись
     needs: build
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
 

@@ -272,7 +272,8 @@ public enum KeyboardRows {
             KeySpec(label: ",", action: .character(","), keyID: "d-comma"),
             KeySpec(label: "?", action: .character("?"), keyID: "d-question"),
             KeySpec(label: "!", action: .character("!"), keyID: "d-bang"),
-            KeySpec(label: "'", action: .character("'"), keyID: "d-quote")
+            KeySpec(label: "'", action: .character("'"), keyID: "d-quote"),
+            editingBackspace
         ]
         _ = settings
         return [first, second, third]
@@ -288,7 +289,12 @@ public enum KeyboardRows {
         let third = [".", ",", "?", "!", "`"].map {
             KeySpec(label: $0, action: .character($0), keyID: "w-\($0)")
         }
-        return [first, second, third]
+        return [first, second, third + [editingBackspace]]
+    }
+
+    private static var editingBackspace: KeySpec {
+        KeySpec(label: "", action: .backspace, width: 1.55, style: .modifier,
+                symbol: "delete.left", keyID: "backspace")
     }
 
     private static func bottomRow(

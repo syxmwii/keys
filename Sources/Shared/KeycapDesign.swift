@@ -5,10 +5,10 @@ public enum KeycapDesign: String, Codable, CaseIterable {
 
     var title: String {
         switch self {
-        case .expressive: return "Expressive"
+        case .expressive: return "MD3"
         case .orbit: return "Орбита"
         case .mechanical: return "Механика"
-        case .classic: return "Классика"
+        case .classic: return "iOS"
         }
     }
 
@@ -89,7 +89,8 @@ final class KeycapFace: UIView {
         case .mechanical: label.font = .monospacedSystemFont(ofSize: size, weight: .medium)
         case .expressive, .classic: label.font = font
         }
-        let symbol = design == .expressive && key.action == .newline ? "return" : key.symbol
+        let genericReturn = key.action == .newline && ["", "ввод", "return"].contains(key.label)
+        let symbol = design == .expressive && genericReturn ? "return" : key.symbol
         label.text = symbol == nil ? key.label : nil
         label.textColor = ink
         icon.image = symbol.flatMap { UIImage(systemName: $0, withConfiguration: UIImage.SymbolConfiguration(pointSize: size, weight: .medium)) }

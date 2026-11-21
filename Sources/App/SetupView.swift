@@ -5,7 +5,7 @@ struct SetupView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        List {
+        SettingsList {
             Section {
                 step(
                     number: 1,

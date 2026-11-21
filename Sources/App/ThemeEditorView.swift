@@ -6,7 +6,7 @@ struct ThemeEditorView: View {
     private var colors: ThemeColors { store.settings.custom }
 
     var body: some View {
-        List {
+        SettingsList {
             Section {
                 HStack(spacing: 8) {
                     swatch(colors.background)

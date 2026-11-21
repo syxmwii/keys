@@ -4,12 +4,30 @@ import SwiftUI
 
 // MARK: - Модель настроек
 
+public enum KeyboardPosition: String, Codable, CaseIterable {
+    case left, center, right
+
+    var title: String {
+        switch self {
+        case .left: return "Слева"
+        case .center: return "По центру"
+        case .right: return "Справа"
+        }
+    }
+
+    func gutter(for width: CGFloat) -> CGFloat {
+        guard self != .center, width >= 340 else { return 0 }
+        return min(72, width - 300, width * 0.16)
+    }
+}
+
 public struct KeysSettings: Codable, Equatable {
     public var expressiveDetail: ExpressiveDetail
     public var design: KeycapDesign
     public var theme: ThemePreset
     public var custom: ThemeColors
 
+    public var position: KeyboardPosition
     public var keyHeight: Double
     public var cornerRadius: Double
     public var keyGap: Double
@@ -46,6 +64,7 @@ public struct KeysSettings: Codable, Equatable {
         design = .orbit
         theme = .midnight
         custom = ThemePreset.custom.colors
+        position = .center
         keyHeight = 50
         cornerRadius = 8
         keyGap = 5
@@ -81,6 +100,7 @@ public struct KeysSettings: Codable, Equatable {
         design = try container.decodeIfPresent(KeycapDesign.self, forKey: .design) ?? .classic
         theme = try container.decodeIfPresent(ThemePreset.self, forKey: .theme) ?? defaults.theme
         custom = try container.decodeIfPresent(ThemeColors.self, forKey: .custom) ?? defaults.custom
+        position = try container.decodeIfPresent(KeyboardPosition.self, forKey: .position) ?? .center
         keyHeight = try container.decodeIfPresent(Double.self, forKey: .keyHeight) ?? defaults.keyHeight
         cornerRadius = try container.decodeIfPresent(Double.self, forKey: .cornerRadius) ?? defaults.cornerRadius
         keyGap = try container.decodeIfPresent(Double.self, forKey: .keyGap) ?? defaults.keyGap
@@ -123,6 +143,7 @@ public struct KeysSettings: Codable, Equatable {
         guard selected != design else { return }
         design = selected
         if selected == .expressive { theme = .material }
+        if selected == .classic { theme = .graphite }
     }
 
     public var colors: ThemeColors {
@@ -158,16 +179,19 @@ public final class SettingsStore: ObservableObject {
     private static let probeKey = "keys.group.probe"
 
     private let group: UserDefaults?
-    private let standard = UserDefaults.standard
+    private let standard: UserDefaults
 
     /// true, если App Group реально доступна и настройки долетают до клавиатуры.
     public private(set) var sharesWithKeyboard: Bool
 
-    @Published public var settings: KeysSettings
+    @Published public var settings: KeysSettings {
+        didSet {
+            if settings != oldValue { persist() }
+        }
+    }
 
-    private var cancellable: AnyCancellable?
-
-    public init(suiteName: String = SettingsStore.appGroupID) {
+    public init(suiteName: String = SettingsStore.appGroupID, standard: UserDefaults = .standard) {
+        self.standard = standard
         group = UserDefaults(suiteName: suiteName)
 
         var loaded: KeysSettings?
@@ -182,13 +206,6 @@ public final class SettingsStore: ObservableObject {
         group?.set(true, forKey: Self.probeKey)
         sharesWithKeyboard = group?.bool(forKey: Self.probeKey) == true
         group?.removeObject(forKey: Self.probeKey)
-
-        // Сохраняем на каждое изменение, но не на первичную загрузку.
-        cancellable = $settings
-            .dropFirst()
-            .sink { [weak self] _ in
-                self?.persist()
-            }
     }
 
     public func persist() {

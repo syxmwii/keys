@@ -100,20 +100,43 @@ final class LayoutTests: XCTestCase {
         XCTAssertEqual(rows[0].first?.action, .character("1"))
     }
 
-    func testSymbolPlaneHasBackspaceEquivalentRows() {
-        let rows = KeyboardRows.rows(
-            layout: .english,
-            plane: .numbers,
-            shift: false,
-            caps: false,
-            settings: settings,
-            enabledLayouts: [.english],
-            showGlobe: false,
-            returnKey: "return"
-        )
-        XCTAssertEqual(rows.count, 4)
-        XCTAssertTrue(rows[3].contains { $0.action == .space })
-        XCTAssertTrue(rows[3].contains { $0.action == .plane(.letters) })
+    func testEditingKeysOnBothSymbolPlanes() {
+        for plane in [KeyPlane.numbers, .symbols] {
+            let rows = KeyboardRows.rows(layout: .english, plane: plane, shift: false, caps: false,
+                                         settings: settings, enabledLayouts: [.english], showGlobe: false,
+                                         returnKey: "search")
+            XCTAssertEqual(rows.count, 4)
+            XCTAssertEqual(rows[2].last?.action, .backspace)
+            XCTAssertTrue(rows[3].contains { $0.action == .space })
+            XCTAssertTrue(rows[3].contains { $0.action == .plane(.letters) })
+            XCTAssertEqual(rows[3].last?.label, "search")
+        }
+    }
+
+    func testSharedAppearanceSavesCurrentValue() throws {
+        let suite = "keys.tests.\(UUID().uuidString)"
+        let local = try XCTUnwrap(UserDefaults(suiteName: suite + ".local"))
+        defer {
+            local.removePersistentDomain(forName: suite)
+            local.removePersistentDomain(forName: suite + ".local")
+        }
+        let writer = SettingsStore(suiteName: suite, standard: local)
+        let reader = SettingsStore(suiteName: suite, standard: local)
+        writer.settings.selectDesign(.expressive)
+        reader.reload()
+        XCTAssertEqual(reader.settings.theme, .material)
+        reader.settings.selectDesign(.classic)
+        writer.reload()
+        XCTAssertEqual(writer.settings.design, .classic)
+        XCTAssertEqual(writer.settings.theme, .graphite)
+    }
+
+    func testOneHandedWidth() {
+        XCTAssertEqual(KeyboardPosition.left.gutter(for: 320), 0)
+        XCTAssertEqual(KeyboardPosition.center.gutter(for: 390), 0)
+        XCTAssertEqual(KeyboardPosition.left.gutter(for: 390), KeyboardPosition.right.gutter(for: 390))
+        XCTAssertGreaterThan(KeyboardPosition.right.gutter(for: 390), 44)
+        XCTAssertLessThanOrEqual(KeyboardPosition.left.gutter(for: 1024), 72)
     }
 
     func testContentHeightGrowsWithRows() {

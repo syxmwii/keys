@@ -7,6 +7,9 @@ final class KeyboardViewController: UIInputViewController {
     private let keyboardView = KeyboardView()
     private let emojiPanel = EmojiPanelView()
 
+    private let expandButton = UIButton(type: .system)
+    private var leftInset: NSLayoutConstraint?
+    private var rightInset: NSLayoutConstraint?
     private let suggestionBar = SuggestionBar()
     private var barHeight: NSLayoutConstraint?
     private lazy var checker = UITextChecker()
@@ -14,6 +17,7 @@ final class KeyboardViewController: UIInputViewController {
     private var displayedAt: CursorContext?
     private var lastCorrection: (at: CursorContext, original: String, inserted: String)?
     private var activeDocument: UUID?
+    private var displayedReturnType = UIReturnKeyType.default
 
     private struct CursorContext: Equatable {
         let document: UUID
@@ -54,6 +58,10 @@ final class KeyboardViewController: UIInputViewController {
         suggestionBar.onPick = { [weak self] word in self?.acceptSuggestion(word) }
         view.addSubview(suggestionBar)
         view.addSubview(keyboardView)
+        expandButton.setImage(UIImage(systemName: "arrow.left.and.right"), for: .normal)
+        expandButton.accessibilityLabel = "Развернуть клавиатуру"
+        expandButton.addTarget(self, action: #selector(expandKeyboard), for: .touchUpInside)
+        view.addSubview(expandButton)
         view.addSubview(emojiPanel)
 
         let heightConstraint = view.heightAnchor.constraint(equalToConstant: 280)
@@ -62,14 +70,17 @@ final class KeyboardViewController: UIInputViewController {
 
         let barHeight = suggestionBar.heightAnchor.constraint(equalToConstant: 0)
         self.barHeight = barHeight
+        let left = keyboardView.leftAnchor.constraint(equalTo: view.leftAnchor)
+        let right = keyboardView.rightAnchor.constraint(equalTo: view.rightAnchor)
+        leftInset = left
+        rightInset = right
         NSLayoutConstraint.activate([
             suggestionBar.topAnchor.constraint(equalTo: view.topAnchor),
             suggestionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             suggestionBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             barHeight,
             keyboardView.topAnchor.constraint(equalTo: suggestionBar.bottomAnchor),
-            keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            left, right,
             keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             emojiPanel.topAnchor.constraint(equalTo: view.topAnchor),
@@ -112,6 +123,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updatePosition()
         updateHeight()
     }
 
@@ -125,6 +137,8 @@ final class KeyboardViewController: UIInputViewController {
         if let correction = lastCorrection, cursorContext() != correction.at { lastCorrection = nil }
         if activeDocument != textDocumentProxy.documentIdentifier {
             beginDocument()
+            rebuild()
+        } else if displayedReturnType != (textDocumentProxy.returnKeyType ?? .default) {
             rebuild()
         }
         updateShiftAfterInput()
@@ -142,6 +156,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         view.backgroundColor = colors.uiBackground
+        displayedReturnType = textDocumentProxy.returnKeyType ?? .default
         builtRows = KeyboardRows.rows(
             layout: currentLayout,
             plane: plane,
@@ -150,9 +165,11 @@ final class KeyboardViewController: UIInputViewController {
             settings: current,
             enabledLayouts: current.enabledLayouts,
             showGlobe: needsInputModeSwitchKey,
-            returnKey: "return"
+            returnKey: returnLabel
         )
 
+        expandButton.tintColor = colors.uiText
+        updatePosition()
         suggestionBar.configure(settings: current)
         refreshSuggestions()
         keyboardView.isHidden = emojiVisible
@@ -166,6 +183,38 @@ final class KeyboardViewController: UIInputViewController {
             showGlobe: needsInputModeSwitchKey
         )
         updateHeight()
+    }
+
+    private var returnLabel: String {
+        let russian = currentLayout == .russian
+        switch displayedReturnType {
+        case .search, .google, .yahoo: return russian ? "найти" : "search"
+        case .send: return russian ? "отпр." : "send"
+        case .go: return russian ? "перейти" : "go"
+        case .next: return russian ? "далее" : "next"
+        case .done: return russian ? "готово" : "done"
+        case .continue: return russian ? "далее" : "continue"
+        default: return russian ? "ввод" : "return"
+        }
+    }
+
+    private func updatePosition() {
+        let gutter = settings.position.gutter(for: view.bounds.width)
+        let onRight = settings.position == .right
+        let left = onRight ? gutter : 0
+        let right = onRight ? 0 : -gutter
+        if leftInset?.constant != left { leftInset?.constant = left }
+        if rightInset?.constant != right { rightInset?.constant = right }
+        expandButton.isHidden = gutter == 0 || emojiVisible
+        let top = barHeight?.constant ?? 0
+        let height = max(0, view.bounds.height - top - view.safeAreaInsets.bottom)
+        expandButton.frame = CGRect(x: onRight ? 0 : view.bounds.width - gutter,
+                                    y: top, width: gutter, height: height)
+    }
+
+    @objc private func expandKeyboard() {
+        store.settings.position = .center
+        updatePosition()
     }
 
     private func updateHeight() {

@@ -17,6 +17,7 @@ final class QuickSettingsView: UIView {
     private let heightValueLabel = UILabel()
     private let detailPicker = UISegmentedControl(items: ExpressiveDetail.allCases.map(\.title))
     private let designPicker = UISegmentedControl(items: KeycapDesign.allCases.map(\.title))
+    private let positionPicker = UISegmentedControl(items: KeyboardPosition.allCases.map(\.title))
     private let heightSlider = UISlider()
     private var themeButtons: [UIButton] = []
     private var switchRows: [UISwitch] = []
@@ -74,6 +75,9 @@ final class QuickSettingsView: UIView {
         contentStack.addArrangedSubview(detailPicker)
         contentStack.addArrangedSubview(themeRow())
         contentStack.addArrangedSubview(heightRow())
+        positionPicker.accessibilityLabel = "Положение клавиатуры"
+        positionPicker.addTarget(self, action: #selector(changePosition), for: .valueChanged)
+        contentStack.addArrangedSubview(positionPicker)
         contentStack.addArrangedSubview(toggleRow(title: "Вибрация", tag: 0))
         contentStack.addArrangedSubview(toggleRow(title: "Звук", tag: 1))
         contentStack.addArrangedSubview(toggleRow(title: "Ряд цифр", tag: 2))
@@ -183,6 +187,7 @@ final class QuickSettingsView: UIView {
         designPicker.selectedSegmentIndex = KeycapDesign.allCases.firstIndex(of: settings.design) ?? 0
         detailPicker.isHidden = settings.design != .expressive
         detailPicker.selectedSegmentIndex = ExpressiveDetail.allCases.firstIndex(of: settings.expressiveDetail) ?? 0
+        positionPicker.selectedSegmentIndex = KeyboardPosition.allCases.firstIndex(of: settings.position) ?? 1
         heightSlider.value = Float(settings.keyHeight)
         heightValueLabel.text = "\(Int(settings.keyHeight)) pt"
         if switchRows.count == 7 {
@@ -233,6 +238,13 @@ final class QuickSettingsView: UIView {
     }
 
     // MARK: - Действия
+
+    @objc private func changePosition() {
+        let index = positionPicker.selectedSegmentIndex
+        guard KeyboardPosition.allCases.indices.contains(index) else { return }
+        store.settings.position = KeyboardPosition.allCases[index]
+        onChange?()
+    }
 
     @objc private func changeDesign() {
         let index = designPicker.selectedSegmentIndex

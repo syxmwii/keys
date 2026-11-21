@@ -3,6 +3,7 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var store: SettingsStore
+    @State private var page = SettingsPage.appearance
     @State private var sample = "Привет, это Keys 👋\n"
     @State private var showReset = false
 
@@ -10,21 +11,28 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if !store.sharesWithKeyboard {
-                    shareWarning
+            SettingsList {
+                switch page {
+                case .appearance:
+                    previewSection
+                    designSection
+                    themeSection
+                    keysSection
+                case .typing:
+                    feedbackSection
+                    inputSection
+                    languageSection
+                    emojiSection
+                case .setup:
+                    if !store.sharesWithKeyboard { shareWarning }
+                    setupSection
+                    resetSection
+                    aboutSection
                 }
-                previewSection
-                designSection
-                themeSection
-                keysSection
-                feedbackSection
-                inputSection
-                languageSection
-                emojiSection
-                setupSection
-                resetSection
-                aboutSection
+            }
+            .id(page)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                SettingsNavigation(page: $page)
             }
             .navigationTitle("Keys")
             .alert("Сбросить настройки?", isPresented: $showReset) {
@@ -156,6 +164,11 @@ struct SettingsView: View {
 
     private var keysSection: some View {
         Section("Клавиши") {
+            Picker("Положение клавиатуры", selection: $store.settings.position) {
+                ForEach(KeyboardPosition.allCases, id: \.self) { position in
+                    Text(position.title).tag(position)
+                }
+            }
             SliderRow(
                 title: "Высота",
                 value: $store.settings.keyHeight,
